@@ -31,8 +31,8 @@ app.post('/users', async (req, res) => {
 // Get all users.
 app.get('/users', async (req, res) => {
     try {
-        await User.find({})
-        res.send(users)
+        const user = await User.find({})
+        res.send(user)
 
     }catch(err) {
         res.status(500).send("Failed to fetch users: " + err)
@@ -52,7 +52,7 @@ app.get('/users/:name', async (req, res) => {
 
     try {
         // fetch a user.
-        await User.findOne({name: findName })
+        const user = await User.findOne({name: findName })
         if(!user) {
             return res.status(404).send("User not found")
         }
@@ -107,7 +107,7 @@ app.get('/users/:id', async (req, res) => {
 
     try {
         // Fetch user by id.
-        await User.findById(_id)
+        const user = await User.findById(_id)
         if(!user) {
             return res.status(404).send("User not found")
         }
@@ -133,7 +133,7 @@ app.post('/users/:name', async (req, res) => {
 
     try {
         // fetch all users.
-        await User.findOneAndDelete({name: findName })
+        const user = await User.findOneAndDelete({name: findName })
         if(!user) {
             return res.status(404).send("User not found")
         }
@@ -142,6 +142,48 @@ app.post('/users/:name', async (req, res) => {
         res.send(user)
     } catch(err) {
         res.status(500).send("Error: " +err + ".  Details:Failed to delete user with name: " + findName)
+    }
+})
+
+
+
+// Update a user by name.
+app.patch('/users/:name', async (req, res) => {
+    
+    // access all request params.
+    console.log('Params = ' + req.params)
+    console.log('Params name = ' +req.params.name)
+
+    // get fields to be updated and find it these are valid fields. 
+    const updates = Object.keys(req.body)
+    const allowedUpdates = ['name', 'age', 'email', 'password']
+
+    const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
+
+    if(!isValidOperation) {
+        return res.status(400).send('Error: Invalid criteria specified for updates.')
+    }
+
+    // Mongoose converts the string ids to object ids and 
+    // we do not need to do that conversion.
+    const findName = req.params.name
+
+    try {
+        // fetch all users.
+        const user = await User.findOneAndUpdate({name: findName}, 
+                                                req.body, // update with.
+                                                {
+                                                    new : true,  // return the new updated user.
+                                                    runValidators: true // run validators while updating the user.
+                                                })
+        if(!user) {
+            return res.status(404).send("User not found.")
+        }
+
+        // Got a user and updates applied.
+        res.send(user)
+    } catch(err) {
+        res.status(400).send("Error: " +err + ".  Details:Failed to delete user with name: " + findName)
     }
 })
 
