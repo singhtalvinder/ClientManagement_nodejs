@@ -1,5 +1,6 @@
 const express = require('express')
 const User = require('../models/user')
+const auth = require('../middleware/auth')
 
 // Use Router for endpoints.
 const router = new express.Router()
@@ -13,24 +14,56 @@ router.post('/users', async (req, res) => {
     const user = new User(req.body)
     try {
         await user.save()
+
+        // generate token.
+        const token = await user.generateAuthToken()
+
         // next line of code is executed only if the above promise is 
         // fullfilled. It will not execute if its rejected.
 
-        res.status(201).send(user)
+        // return user info with the generated token.
+        res.status(201).send( {user, token} )
     } catch(err) {
         res.status(400).send("An error occured while adding user: " + err)
     }
 })
 
-// Get all users.
-router.get('/users', async (req, res) => {
+// Login existing user.
+router.post('/users/login', async(req, res) => {
     try {
-        const user = await User.find({})
-        res.send(user)
+        const user = await User.findByCredentials(req.body.email, req.body.password)
 
-    }catch(err) {
-        res.status(500).send("Failed to fetch users: " + err)
+        // Generate token for the user logging in.
+        const token = await user.generateAuthToken()
+
+        // send user info with token.
+        res.send({user, token})
+
+    } catch(err) {
+        res.status(400).send('Error: ' + err)
+
     }
+
+})
+
+/////////////////////////////////////////////////////////////////
+// Every single call to the rest api will require authentication 
+// except signup(create) and login.
+/////////////////////////////////////////////////////////////////
+
+// Get current authenticated user(Or get my profile.). 
+// Get all users doesn't makes sense here as a user should not be 
+// able to access all other users.
+router.get('/users/me', auth, async (req, res) => {
+    res.send(req.user)
+    
+    // try {
+    //     const users = await User.find({})
+    //     res.send(users)
+
+    // }catch(err) {
+    //     res.status(500).send("Failed to fetch users: " + err)
+    // }
 
 })
 
