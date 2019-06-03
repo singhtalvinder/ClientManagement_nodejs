@@ -1,10 +1,13 @@
 const mongoose = require('mongoose')
 
+// Bcrypt for hashing.
+const bcrypt = require('bcryptjs')
+
 // Use validator for validations instead of defining own validation rules.
 const validator = require('validator')
 
-// The user data model. 
-const User = mongoose.model('User', {
+// Define schema.
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -42,6 +45,33 @@ const User = mongoose.model('User', {
         }
     }
 })
+
+// Use predefined middleware methods to handle some operations in our code.
+// Note: the second parameter should be a regular function and should not be 
+// an arrow function because 'this' binding is crucial and arrow functions don't 
+// bind 'this'.
+userSchema.pre('save', async function(next) {
+    //Individual user to be saved.
+    const user = this
+
+    // execute it before a user is saved. call next when done.
+    console.log('Just before saving.')
+
+    // Hash the pwd.
+    // Check if not already hashed. Will return true on a new user and also on 
+    // updating a user if the password is changed.
+    if(user.isModified('password')) {
+        user.password = await bcrypt.hash(user.password, 8)
+    }
+
+    // Done.
+    next()
+
+})
+
+// The user data model. 
+// Pass the userSchema to take advantage of mongoose middleware.
+const User = mongoose.model('User',  userSchema)
 
 // export it to use it.
 module.exports = User

@@ -131,12 +131,25 @@ router.patch('/users/:name', async (req, res) => {
 
     try {
         // fetch all users.
-        const user = await User.findOneAndUpdate({name: findName}, 
-                                                req.body, // update with.
-                                                {
-                                                    new : true,  // return the new updated user.
-                                                    runValidators: true // run validators while updating the user.
-                                                })
+        // NOTE: findOneAndUpdate bypasses mongoose and thus would not invoke 'pre' middleware method.
+        // So we split it into 2-ops as below.
+     
+        // const user = await User.findOneAndUpdate({name: findName}, 
+        //                                         req.body, // update with.
+        //                                         {
+        //                                             new : true,  // return the new updated user.
+        //                                             runValidators: true // run validators while updating the user.
+        //                                         })
+
+        const user = await User.findOne({name: findName})
+        // updates.forEach((updateWhat) => {
+        //     user[updateWhat] = req.body[updateWhat]         
+        // })
+        // Shorthand.
+        updates.forEach((updateWhat) => user[updateWhat] = req.body[updateWhat])
+
+        await user.save()
+
         if(!user) {
             return res.status(404).send("User not found.")
         }
