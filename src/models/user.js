@@ -56,6 +56,38 @@ const userSchema = new mongoose.Schema({
     }]
 })
 
+// Solution 1: .
+// Return only the needed data back to the client on 
+// successful authentication(Signup/ Login).
+userSchema.methods.getPublicProfile = function () {
+    const user = this
+    const userObject = user.toObject()
+
+    // delete the user password and the tokens array from the response
+    // as these should not be returned.
+    delete userObject.password
+    delete userObject.tokens
+
+    // return the modified object.
+    return userObject
+}
+
+// Solution 2: 
+// Return only the needed data back to the client on 
+// successful authentication(Signup/ Login).
+userSchema.methods.toJSON = function () {
+    const user = this
+    const userObject = user.toObject()
+
+    // delete the user password and the tokens array from the response
+    // as these should not be returned.
+    delete userObject.password
+    delete userObject.tokens
+
+    // return the modified object.
+    return userObject
+}
+
 // Generate and authenticate users for signup and login.
 userSchema.methods.generateAuthToken = async function () {
     const user = this
